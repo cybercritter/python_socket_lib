@@ -4,48 +4,30 @@ from ipaddress import IPv4Address
 
 
 class PATFSocket:
+    """
+    This class provides the ability to create specialized
+    sockets for the PATF library
+    """
     def __init__(self,
-                 address: str, port: int,
-                 multicast=False,
+                 multicast_group=("0.0.0.0", -1),
                  family=socket.AF_INET,
-                 sock_type=socket.SOCK_DGRAM) -> None:
-
-        """
-        Initializes the PATFSocket object.
-
-        Args:
-            address (str): The IP address of the server.
-            port (int): The port number for communication.
-            multicast (bool): Determines if the socket is multicast or unicast. Default is False.
-            family: The type of address, IPv4 or IPv6. Default is socket.AF_INET.
-            sock_type: The type of socket to be created. Default is socket.SOCK_DGRAM.
-
-        Returns:
-            None
-        """
-        self._sock = self.create_multicast_socket() if multicast else socket.socket(family, sock_type)
-        self._address = IPv4Address(address)
-        self._port = port
+                 sock_type=socket.SOCK_DGRAM):
+        self.multicast_group = multicast_group
+        self.is_multicast = IPv4Address(self.multicast_group[0]).is_multicast
         self._family = family
         self._sock_type = sock_type
 
+        self._sock = self.create_multicast_socket() if self.is_multicast else socket.socket(family, sock_type)
 
-    @property
-    def multicast_group(self):
+    def bind(self):
         """
-        Returns the multicast group if the address is multicast, otherwise returns None.
+        The bind function is used to associate the socket with a specific network interface and port number.
+        The bind function takes two arguments: an IP address and a port number. The IP address can be either
+        an IPv4 or IPv6 address, or it can be set to INADDR_ANY to indicate that the server should listen on all
+        available interfaces. The port number is an integer value in the range 1-65535.
 
-        Returns:
-            tuple or None: The multicast group as a tuple of (address, port) if the address is multicast, otherwise None.
-        """
-        return (str(self._address), self._port) if self._address.is_multicast else None
-
-    def bind(self) -> None:
-        """
-        Binds the socket to the multicast group if the address is multicast.
-
-        Returns:
-            None
+        :param self: Allow an object to refer to itself inside of the class
+        :return: Nothing
         """
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         if self.multicast_group:
@@ -62,36 +44,34 @@ class PATFSocket:
 
     def close(self):
         """
-        Closes the socket.
+        The close function closes the socket connection.
 
-        Returns:
-            None
+
+        :param self: Represent the instance of the class
+        :return: Nothing
         """
         self._sock.close()
 
-    def send(self, snd_data) -> int:
+    def send(self, snd_data):
         """
-        Sends data to the multicast group.
+        The send function sends data to the multicast group.
 
-        Args:
-            snd_data: Data to be sent to the socket.
 
-        Returns:
-            int: The number of bytes sent.
+        :param self: Represent the instance of the class
+        :param snd_data: Send data to the multicast group
+        :return: The number of bytes sent
         """
         return self._sock.sendto(snd_data, self.multicast_group) if self.multicast_group else 0
 
-    def create_multicast_socket(self, timeout: float = 0.2) -> socket.socket:
+    def create_multicast_socket(self, timeout: float = 0.2):
         """
-        Creates a socket for multicast communication.
+        The create_multicast_socket function creates a socket for multicast communication.
 
-        Args:
-            timeout (float): Set the timeout for the socket. Default is 0.2.
-
-        Returns:
-            socket.socket or None: A socket object if the address is multicast, otherwise None.
+        :param self: Refer to the current instance of a class
+        :param timeout: float: Set the timeout for the socket
+        :return: A socket
         """
-        if not self._address.is_multicast:
+        if not self.is_multicast:
             return None
         try:
             sock = socket.socket(family=self._family, type=self._sock_type)
