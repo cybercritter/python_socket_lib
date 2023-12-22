@@ -19,7 +19,9 @@ if __name__ == '__main__':
             except NotImplementedError as e:
                 print(f"{e}")
 
+        print("close the socket and quit the program")
         new_sock.close()
 
     except NotImplementedError as e:
         print(f"{e}")
+        
