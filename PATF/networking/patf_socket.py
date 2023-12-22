@@ -31,7 +31,7 @@ class PATFSocket:
         """
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         if self.multicast_group:
-            self._sock.bind(self.multicast_group)
+            self._sock.bind(self.multicast_group[0])
 
     def connect(self):
         """
